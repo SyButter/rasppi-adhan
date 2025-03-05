@@ -168,19 +168,19 @@ isDst = time.localtime().tm_isdst
 
 now = datetime.datetime.now()
 strPlayFajrAzaanMP3Command = (
-    f"echo '{now} Playing Fajr Azaan' >> {root_dir}/adhan.log 2>&1 && "
+    f"echo \"$(date) Playing Fajr Azaan\" >> {root_dir}/adhan.log 2>&1 && "
     f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
     f"{root_dir}/media/Adhan-fajr.mp3 >> {root_dir}/adhan.log 2>&1 && "
-    f"echo '{now} Playing Dua' >> {root_dir}/adhan.log 2>&1 && "
+    f"echo \"$(date) Playing Dua\" >> {root_dir}/adhan.log 2>&1 && "
     f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
     f"{root_dir}/media/after-adhan-dua.mp3 >> {root_dir}/adhan.log 2>&1"
 )
 
 strPlayAzaanMP3Command = (
-    f"echo '{now} Playing Azaan' >> {root_dir}/adhan.log 2>&1 && "
+    f"echo \"$(date) Playing Azaan\" >> {root_dir}/adhan.log 2>&1 && "
     f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
     f"{root_dir}/media/Adhan-Makkah1.mp3 >> {root_dir}/adhan.log 2>&1 && "
-    f"echo '{now} Playing Dua' >> {root_dir}/adhan.log 2>&1 && "
+    f"echo \"$(date) Playing Dua\" >> {root_dir}/adhan.log 2>&1 && "
     f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
     f"{root_dir}/media/after-adhan-dua.mp3 >> {root_dir}/adhan.log 2>&1"
 )
@@ -189,7 +189,7 @@ strUpdateCommand = f"python3 {root_dir}/updateAzaanTimers.py >> {root_dir}/adhan
 strClearLogsCommand = f"truncate -s 0 {root_dir}/adhan.log 2>&1"
 strJobComment = "rpiAdhanClockJob"
 strSurahBaqarahMP3Command = (
-    f"echo '{now} Playing Surah Baqarah' >> {root_dir}/adhan.log 2>&1 && "
+    f"echo \"$(date) Playing Surah Baqarah\" >> {root_dir}/adhan.log 2>&1 && "
     f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
     f"{root_dir}/media/002-surah-baqarah-mishary.mp3 >> {root_dir}/adhan.log 2>&1"
 )
