@@ -14,7 +14,7 @@ from modules.praytimes import PrayTimes
 PT = PrayTimes() 
 
 from crontab import CronTab
-system_cron = CronTab(user='pi')
+system_cron = CronTab(user=True)
 
 
 # HELPER FUNCTIONS
@@ -162,17 +162,31 @@ lat, lon, method, fajr_azaan_vol, default_azaan_vol, surahBaqarah, surahVolume =
 # By default system timezone will be used
 # --------------------
 PT.setMethod(method)
+# --------------------
 utcOffset = -(time.timezone/float(3600))
 isDst = time.localtime().tm_isdst
 
 now = datetime.datetime.now()
-strPlayFajrAzaanMP3Command = f"omxplayer --vol {fajr_azaan_vol} -o local {root_dir}/media/Adhan-fajr.mp3 > /dev/null 2>&1"
-strPlayAzaanMP3Command = f"omxplayer --vol {default_azaan_vol} -o local {root_dir}/media/Adhan-Makkah1.mp3 > /dev/null 2>&1"
+strPlayFajrAzaanMP3Command = (
+    f"echo '[$(now)] Playing Fajr Azaan' >> {root_dir}/adhan.log 2>&1 && "
+    f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
+    f"{root_dir}/media/Adhan-fajr.mp3 >> {root_dir}/adhan.log 2>&1"
+)
+
+strPlayAzaanMP3Command = (
+    f"echo '[$(now)] Playing Azaan' >> {root_dir}/adhan.log 2>&1 && "
+    f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
+    f"{root_dir}/media/Adhan-Makkah1.mp3 >> {root_dir}/adhan.log 2>&1"
+)
+
 strUpdateCommand = f"python3 {root_dir}/updateAzaanTimers.py >> {root_dir}/adhan.log 2>&1"
 strClearLogsCommand = f"truncate -s 0 {root_dir}/adhan.log 2>&1"
 strJobComment = "rpiAdhanClockJob"
-strSurahBaqarahMP3Command = f"omxplayer --vol {surahVolume} -o local {root_dir}/media/002-surah-baqarah-mishary.mp3 > /dev/null 2>&1"
-
+strSurahBaqarahMP3Command = (
+    f"echo '[$(now)] Playing Surah Baqarah' >> {root_dir}/adhan.log 2>&1 && "
+    f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
+    f"{root_dir}/media/002-surah-baqarah-mishary.mp3 >> {root_dir}/adhan.log 2>&1"
+)
 # Remove existing jobs created by this script
 system_cron.remove_all(comment=strJobComment)
 
@@ -214,6 +228,6 @@ addUpdateCronJob(system_cron, strUpdateCommand)
 # Clear the logs every month
 addClearLogsCronJob(system_cron,strClearLogsCommand)
 
-system_cron.write_to_user(user='pi')
+system_cron.write_to_user(user=True)
 print('Script execution finished at: ' + str(now))
 

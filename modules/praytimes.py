@@ -117,7 +117,7 @@ class PrayTimes():
 	settings = {
 		"imsak"    : '10 min',
 		"dhuhr"    : '0 min',
-		"asr"      : 'Standard',
+		"asr"      : 'Hanafi',
 		"highLats" : 'NightMiddle'
 	}
 
