@@ -168,13 +168,13 @@ isDst = time.localtime().tm_isdst
 
 now = datetime.datetime.now()
 strPlayFajrAzaanMP3Command = (
-    f"echo '[$(now)] Playing Fajr Azaan' >> {root_dir}/adhan.log 2>&1 && "
+    f"echo '{now} Playing Fajr Azaan' >> {root_dir}/adhan.log 2>&1 && "
     f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
     f"{root_dir}/media/Adhan-fajr.mp3 >> {root_dir}/adhan.log 2>&1"
 )
 
 strPlayAzaanMP3Command = (
-    f"echo '[$(now)] Playing Azaan' >> {root_dir}/adhan.log 2>&1 && "
+    f"echo '{now} Playing Azaan' >> {root_dir}/adhan.log 2>&1 && "
     f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
     f"{root_dir}/media/Adhan-Makkah1.mp3 >> {root_dir}/adhan.log 2>&1"
 )
@@ -211,7 +211,7 @@ print("---------------------------------")
 # Add times to crontab
 print()
 print("---------------------------------")
-print("Crob jobs scheduled")
+print("Cron jobs scheduled")
 print("---------------------------------")
 addAzaanTime('fajr',times['fajr'],system_cron,strPlayFajrAzaanMP3Command)
 addAzaanTime('dhuhr',times['dhuhr'],system_cron,strPlayAzaanMP3Command)
