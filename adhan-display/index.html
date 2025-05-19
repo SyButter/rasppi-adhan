@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Prayer Times</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- link to our CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Prayer Times</h1>
+    <div id="date"></div>
+  </header>
+
+  <ul id="times">
+    <!-- JS will inject today's times here -->
+  </ul>
+
+  <div id="next">
+    Next: <span id="nextName"></span> in <span id="countdown"></span>
+  </div>
+
+  <!-- PrayTimes library -->
+  <script src="prayTimes.js"></script>
+  <!-- our display logic -->
+  <script src="script.js"></script>
+</body>
+</html>

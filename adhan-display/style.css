@@ -1,0 +1,27 @@
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  font-family:sans-serif;
+  background:#222;
+  color:#eee;
+}
+header { text-align:center; margin:2rem 0; }
+h1 { font-size:2.5rem; }
+#date { margin-top:.5rem; font-size:1.2rem; }
+#times {
+  list-style:none;
+  width:90%;
+  max-width:400px;
+}
+#times li {
+  display:flex;
+  justify-content:space-between;
+  padding:.75rem;
+  border-bottom:1px solid #444;
+}
+#next {
+  margin-top:2rem;
+  font-size:1.3rem;
+}
