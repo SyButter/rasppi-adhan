@@ -25,3 +25,35 @@ h1 { font-size:2.5rem; }
   margin-top:2rem;
   font-size:1.3rem;
 }
+#jummah-schedule {
+  margin: 2rem auto;
+  max-width: 400px;
+  background: #2b2b2b;        /* dark charcoal */
+  color: #bbb;               /* light gray text */
+  border-radius: 8px;
+  box-shadow: none;          /* remove glow/shadow */
+  padding: 1rem;
+}
+
+#jummah-schedule h2 {
+  text-align: center;
+  margin-bottom: 1rem;
+  color: #ddd;
+}
+
+#jummah-schedule table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#jummah-schedule th,
+#jummah-schedule td {
+  padding: 0.5rem;
+  border: 1px solid #444;
+  text-align: center;
+}
+
+#jummah-schedule th {
+  background: #3a3a3a;       /* slightly lighter header */
+  color: #eee;
+}

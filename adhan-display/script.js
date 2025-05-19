@@ -88,6 +88,47 @@ function renderTimes() {
   startCountdown(next.time);
 }
 
-// initial paint + recalc every minute (to catch midnight rollover)
-renderTimes();
-setInterval(renderTimes, 60*10000);
+async function renderNextJummah() {
+  try {
+    const resp = await fetch('jummah_schedule.json');
+    const [next] = await resp.json();  // we sliced to just one entry
+    if (!next) return;
+
+    const tbody = document.querySelector('#jummah-schedule tbody');
+    tbody.innerHTML = `
+      <tr>
+        <td>${next.date}</td>
+        <td>${next.first}</td>
+        <td>${next.second}</td>
+      </tr>
+    `;
+  } catch (err) {
+    console.error('Failed to load Jummah schedule:', err);
+  }
+}
+
+function scheduleDaily(fn, hour) {
+  const now  = new Date();
+  const then = new Date(
+    now.getFullYear(), now.getMonth(), now.getDate(),
+    hour, 0, 0, 0
+  );
+  // if it’s already past that hour today, schedule for tomorrow
+  if (then <= now) then.setDate(then.getDate() + 1);
+
+  const msUntil = then - now;
+  // first fire at 2 AM
+  setTimeout(() => {
+    fn();
+    // then every 24 hours thereafter
+    setInterval(fn, 24 * 60 * 60 * 1000);
+  }, msUntil);
+}
+
+function refreshAll() {
+  renderTimes();
+  renderNextJummah();
+}
+
+refreshAll();
+scheduleDaily(refreshAll, 2);

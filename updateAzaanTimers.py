@@ -190,7 +190,7 @@ strClearLogsCommand = f"truncate -s 0 {root_dir}/adhan.log 2>&1"
 strJobComment = "rpiAdhanClockJob"
 strSurahBaqarahMP3Command = (
     f"echo \"$(date) Playing Surah Baqarah\" >> {root_dir}/adhan.log 2>&1 && "
-    f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
+    f"mpv --audio-device=alsa/plughw:1,0 --volume=0 --no-video "
     f"{root_dir}/media/002-surah-baqarah-mishary.mp3 >> {root_dir}/adhan.log 2>&1"
 )
 # Remove existing jobs created by this script
