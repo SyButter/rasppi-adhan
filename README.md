@@ -1,167 +1,227 @@
-# Raspberry Pi Adhan Clock
-This projects uses a python script which automatically calculates [adhan](https://en.wikipedia.org/wiki/Adhan) times every day and plays all five adhans at their scheduled time using cron. 
+# Raspberry Pi Adhan Clock & Display Dashboard
 
-## Prerequisites
-1. Raspberry Pi running Raspbian
-  1. I would stay away from Raspberry Pi zero esp if you're new to this stuff since it doesn't come with a built in audio out port.
-  2. Also, if you haven't worked with raspberry pi before, I would highly recommend using [these](https://www.raspberrypi.org/documentation/installation/noobs.md) instructions to get it up and running: https://www.raspberrypi.org/documentation/installation/noobs.md
-2. Speakers
-3. Auxiliary audio cable
+This project not only calculates and plays the five daily adhans on a Raspberry Pi via cron, but also drives a full‑screen display showing:
 
-## Caution when using Bluetooth Speakers
-1. Raspberry Pi's bluetooth drivers has known issues that result in intermittent disconnections. Using a wired speaker is recommended
+- Today’s prayer times and live countdown
+- Next Jumʿah Khateeb schedule (automatically scraped each night)
 
-## Instructions
-1. Install git: Go to raspberry pi terminal (command line interface) and install `git`
-  ```bash
-  sudo apt install git
-  ```
-2. Clone repo: Clone this repository on your raspberry pi in your `home` directory. (Tip: run `$ cd ~` to go to your home directory)
-  ```bash
-  $ git clone https://github.com/rehanhaider/adhan.git
-  ```
-  * After doing that you should see an `adhan` directory in your `home` directory. 
+---
 
-## Run it for the first time
-Run this command:
+## 🔧 Prerequisites
+
+1. **Raspberry Pi** running Raspberry Pi OS (formerly Raspbian)
+   - Pi 3/4/400 or newer recommended (for Puppeteer). Avoid Pi Zero if new.
+   - HDMI output to a display or TV.
+2. **Speakers** (wired aux recommended; Bluetooth has disconnect quirks).
+3. **Internet connection** (for initial setup and nightly scraping).
+4. **Git**, **Node.js**, **Python 3** installed on the Pi:
+   ```bash
+   sudo apt update
+   sudo apt install -y git nodejs npm python3 python3-pip chromium-browser xdotool
+   ```
+5. **Python packages** (in your project folder):
+   ```bash
+   cd ~/adhan-display
+   pip3 install requests beautifulsoup4
+   ```
+6. **Node packages** (for the Jumʿah scraper):
+   ```bash
+   cd ~/adhan-display
+   npm install puppeteer
+   ```
+
+---
+
+## 📥 Clone & Initial Setup
 
 ```bash
-$ python3 /home/pi/adhan/updateAzaanTimers.py --lat <YOUR_LAT> --lon <YOUR_LNG> --method <METHOD>
+cd ~
+git clone https://github.com/SyButter/rasppi-adhan.git adhan-display
+cd adhan-display
 ```
 
-Replace the arguments above with your location information and calculation method:
-* Set the latitude and longitude so it can calculate accurate prayer times for that location.
-* Set adhan time [calculation method](http://praytimes.org/manual#Set_Calculation_Method).
+### 1. Configure prayer‑times script
 
-### Calculation Methods available
-```json
-{
-   "MWL":{
-      "name":"Muslim World League",
-      "params":{"fajr":18, "isha":17}
-   },
-   "ISNA":{
-      "name":"Islamic Society of North America (ISNA)",
-      "params":{"fajr":15, "isha":15}
-   },
-   "Egypt":{
-      "name":"Egyptian General Authority of Survey",
-      "params":{"fajr":19.5, "isha":17.5}
-   },
-   "Makkah":{
-      "name":"Umm Al-Qura University, Makkah",
-      "params":{"fajr":18.5, "isha":"90 min"}
-   },
-   "Karachi":{
-      "name":"University of Islamic Sciences, Karachi",
-      "params":{"fajr":18, "isha":18}
-   },
-   "Tehran":{
-      "name":"Institute of Geophysics, University of Tehran",
-      "params":{"fajr":17.7, "isha":14, "maghrib":4.5, "midnight":"Jafari"}
-   },
-   "Jafari":{
-      "name":"Shia Ithna-Ashari, Leva Institute, Qum",
-      "params":{"fajr":16, "isha":14, "maghrib":4, "midnight":"Jafari"}
-   }
-}
+Run the timer‑setup script once with your coordinates and preferred method:
+
+```bash
+python3 updateAzaanTimers.py   --lat  <YOUR_LATITUDE>   --lon  <YOUR_LONGITUDE>   --method ISNA       # or MWL, Egypt, Karachi, etc.
 ```
 
+This will:
+- Write your `lat`, `lon`, `method` (and optional volumes) into `settings.ini`.
+- Calculate today’s prayer times and install cron jobs to play the Adhan audio.
+- Schedule itself to re‑run nightly at 1 AM and truncate logs monthly.
 
-If everythig worked, your output will look something like this:
-```
----------------------------------
-Co-ordinates provided
----------------------------------
-Latitude: 28.479250699999998, Longitude: 77.535747, Method: Karachi
----------------------------------
+> **Tip:** Use `crontab -l` to verify your jobs. Logs are in `~/adhan-display/adhan.log`.
 
----------------------------------
-Prayer Times
----------------------------------
-Fajr:    04:08 hrs
-Dhuhr:   12:16 hrs
-Asr:     15:50 hrs
-Maghrib: 18:59 hrs
-Isha:    20:25 hrs
----------------------------------
+### 2. (Optional) Enable Friday Surah Baqarah
 
----------------------------------
-Crob jobs scheduled
----------------------------------
-8 4 * * * omxplayer --vol 0 -o local /home/pi/Desktop/Github/adhan/media/Adhan-fajr.mp3 > /dev/null 2>&1 # rpiAdhanClockJob
-16 12 * * * omxplayer --vol 0 -o local /home/pi/Desktop/Github/adhan/media/Adhan-Makkah1.mp3 > /dev/null 2>&1 # rpiAdhanClockJob
-50 15 * * * omxplayer --vol 0 -o local /home/pi/Desktop/Github/adhan/media/Adhan-Makkah1.mp3 > /dev/null 2>&1 # rpiAdhanClockJob
-59 18 * * * omxplayer --vol 0 -o local /home/pi/Desktop/Github/adhan/media/Adhan-Makkah1.mp3 > /dev/null 2>&1 # rpiAdhanClockJob
-25 20 * * * omxplayer --vol 0 -o local /home/pi/Desktop/Github/adhan/media/Adhan-Makkah1.mp3 > /dev/null 2>&1 # rpiAdhanClockJob
-0 8 * * 5 omxplayer --vol 0 -o local /home/pi/Desktop/Github/adhan/media/002-surah-baqarah-mishary.mp3 > /dev/null 2>&1 # Surah Baqarah
----------------------------------
-
-```
-
-If you look at the last few lines, you'll see that 5 adhan times have been scheduled. Then there is another line at the end which makes sure that at 1am every day the same script will run and calculate adhan times for that day. And lastly, there is a line to clear logs on a monthly basis so that your log file doesn't grow too big.
-
-
-Note that for later runs you do not have to supply any arguments as they are saved in `/home/pi/adhan/settings.ini`.
-
-## Play Surah Baqrah on Fridays
-If you notice the output above, it has a line item with comment "# Surah Baqarah". This is disabled by default, but can be turned on by editing settings.ini and updating "FRIDAY" section
-```
+Edit `settings.ini`:
+```ini
 [FRIDAY]
-playsurahbaqarah = True
-surahvolume = 0
+playSurahBaqarah = True
+surahVolume      = 0
 ```
 
-VOILA! You're done!! Plug in your speakers and enjoy!
+---
 
-Please see the [manual](http://praytimes.org/manual) for advanced configuration instructions. 
+## 🖥 Front‑End Display Setup
 
-There are 2 additional arguments that are optional, you can set them in the first run or
-further runs: `--fajr-azaan-volume` and `azaan-volume`. You can control the volume of the Azaan
-by supplying numbers in millibels. To get more information on how to select the values, run the command with `-h`.
+All files for the dashboard live in **`~/adhan-display`**:
+```
+adhan-display/
+├── index.html
+├── style.css
+├── script.js
+├── prayTimes.js       # PrayTimes.js v2 from praytimes.org
+├── schedule.json      # auto‑generated by scraper
+├── scrape_jummah_schedule.js  # Node scraper
+└── prayerTimes.json   # (optional) from updateDisplayData.py
+```
 
-## Configuring custom actions before/after adhan
-
-Sometimes it is needed to run custom commands either before, after or before
-and after playing adhan. For example, if you have
-[Quran playing continuously](https://github.com/LintangWisesa/RPi_QuranSpeaker),
-you would want to pause and resume the playback. Another example, is to set your
-status on a social network, or a calendar, to block/unblock the Internet
-using [pi.hole rules](https://docs.pi-hole.net/), ... etc.
-
-You can easily do this by adding scripts in the following directories:
-- `before-hooks.d`: Scripts to run before adhan playback
-- `after-hooks.d`: Scripts to run after adhan playback
-
-### Example:
-To pause/resume Quran playback if using the
-[RPi_QuranSpeaker](https://github.com/LintangWisesa/RPi_QuranSpeaker) project, place
-the following in 2 new files under the above 2 directories:
+### 1. Download PrayTimes.js
 
 ```bash
-# before-hooks.d/01-pause-quran-speaker.sh
-#!/usr/bin/env bash
-/home/pi/RPi_QuranSpeaker/pauser.py pause
+wget https://praytimes.org/code/v2/js/PrayTimes.js -O prayTimes.js
 ```
 
+### 2. `index.html`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Prayer Times & Jummah</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Prayer Times</h1>
+  <div id="date"></div>
+  <ul id="times"></ul>
+  <div id="next"></div>
+  <section id="jummah-schedule">
+    <h2>Next Jummah Khateeb</h2>
+    <table>
+      <thead><tr><th>Date</th><th>First</th><th>Second</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+  <script src="prayTimes.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
+```
+
+### 3. `style.css`
+
+```css
+body {
+  background:#111; color:#ccc; font-family:sans-serif;
+  display:flex; flex-direction:column; align-items:center;
+}
+h1 { margin:1rem; }
+ul#times { list-style:none; width:300px; }
+ul#times li { display:flex; justify-content:space-between; padding:.5rem; border-bottom:1px solid #444; }
+#next { margin:1rem; font-size:1.2rem; }
+#jummah-schedule {
+  margin:2rem auto; padding:1rem; background:#222; border-radius:6px;
+}
+#jummah-schedule h2 { text-align:center; margin-bottom:1rem; }
+#jummah-schedule table { width:100%; border-collapse:collapse; }
+#jummah-schedule th, #jummah-schedule td { padding:.5rem; border:1px solid #333; text-align:center; }
+#jummah-schedule th { background:#333; color:#eee; }
+```
+
+### 4. `script.js`
+
+```js
+// CONFIG
+const pt = new PrayTimes('ISNA'); // adjust or load from settings.ini
+
+// helpers
+function pad(n){return n<10?'0'+n:n;}
+function format12(t){let [h,m]=t.split(':').map(Number),amp=h>=12?'PM':'AM';h=(h%12)||12;return `${h}:${pad(m)} ${amp}`;}
+
+// render prayer times & countdown...
+function renderTimes(){ /* your existing code */ }
+
+// render next Jummah
+async function renderNextJummah(){
+  const data = await fetch('schedule.json').then(r=>r.json());
+  const [next] = data;
+  if(!next) return;
+  document.querySelector('#jummah-schedule tbody').innerHTML =
+    `<tr><td>${next.date}</td><td>${next.first}</td><td>${next.second}</td></tr>`;
+}
+
+// schedule 2 AM fetch
+function scheduleDaily(fn,h){
+  const now=new Date(), then=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h);
+  if(then<=now) then.setDate(then.getDate()+1);
+  setTimeout(()=>{fn();setInterval(fn,86400000);},then-now);
+}
+
+// initial + intervals
+renderTimes(); renderNextJummah();
+setInterval(renderTimes,60000);
+scheduleDaily(renderNextJummah,2);
+```
+
+### 5. Jumʿah Scraper (`scrape_jummah_schedule.js`)
+Uses Puppeteer to load the site, extract `#schedule-table` rows, filter for upcoming Fridays, write `schedule.json`.
+
+Run manually or via cron:
 ```bash
-# after-hooks.d/01-resume-quran-speaker.sh
-#!/usr/bin/env bash
-/home/pi/RPi_QuranSpeaker/pauser.py resume
+node scrape_jummah_schedule.js
 ```
 
-Do not forget to make the scripts executable:
+---
+
+## ⏰ Automation & Deployment
+
+### Nightly Jumʿah scrape at 2 AM
 ```bash
-chmod u+x ./before-hooks.d/01-pause-quran-speaker.sh
-chmod u+x ./after-hooks.d/01-resume-quran-speaker.sh
+crontab -e
+# Add:
+0 2 * * * cd ~/adhan-display && /usr/bin/node scrape_jummah_schedule.js >> scrape.log 2>&1
 ```
 
-## Tips:
-1. You can see your currently scheduled jobs by running `crontab -l`
-2. The output of the job that runs at 1am every night is being captured in `/home/pi/adhan/adhan.log`. This way you can keep track of all successful runs and any potential issues. This file will be truncated at midnight on the forst day of each month. To view the output type `$ cat /home/pi/adhan/adhan.log`
+### Serve the Dashboard
+```bash
+sudo tee /etc/systemd/system/adhan-display.service <<EOF
+[Unit]
+Description=Adhan Dashboard HTTP Server
+After=network.target
 
-## Credits
-I have made modifications / bug fixes but I've used the following as starting point:
-* Python code to calculate adhan times: http://praytimes.org/code/ 
-* Basic code to turn the above into an adhan clock: http://randomconsultant.blogspot.co.uk/2013/07/turn-your-raspberry-pi-into-azaanprayer.html
-* Cron scheduler: https://pypi.python.org/pypi/python-crontab/ 
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/adhan-display
+ExecStart=/usr/bin/python3 -m http.server 8000 --bind 0.0.0.0
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo systemctl daemon-reload
+sudo systemctl enable adhan-display
+sudo systemctl start adhan-display
+```
+
+### Kiosk‑Mode Chromium
+```bash
+mkdir -p /home/pi/.config/lxsession/LXDE-pi
+tee /home/pi/.config/lxsession/LXDE-pi/autostart <<EOF
+@xset s off
+@xset -dpms
+@xset s noblank
+@bash -c "sleep 10"
+@chromium-browser --noerrdialogs --disable-infobars --kiosk http://localhost:8000
+EOF
+chown -R pi:pi /home/pi/.config
+```
+
+Set–and–forget – your Pi will ring adhans, scrape upcoming Jumʿah, and display both on screen every day!
