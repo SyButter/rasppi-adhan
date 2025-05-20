@@ -11,6 +11,7 @@
   "type": "commonjs",
   "description": "",
   "dependencies": {
+    "adhan-display": "file:",
     "puppeteer": "^24.8.2"
   }
 }
