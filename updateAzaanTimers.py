@@ -3,6 +3,8 @@
 import datetime
 import time
 import sys
+import os
+import random
 from os.path import dirname, abspath, join as pathjoin
 import argparse
 from configparser import ConfigParser
@@ -14,8 +16,6 @@ from modules.praytimes import PrayTimes
 PT = PrayTimes() 
 
 from crontab import CronTab
-system_cron = CronTab(user=True)
-
 
 # HELPER FUNCTIONS
 # ---------------------------------
@@ -34,6 +34,10 @@ def parseArgs():
                         help='Volume for azaan (other than fajr) in millibels, 1500 is loud and -30000 is quiet (default 0)')
     parser.add_argument('--fajr-azaan-volume', type=int, dest='fajr_azaan_vol',
                         help='Volume for fajr azaan in millibels, 1500 is loud and -30000 is quiet (default 0)')
+    parser.add_argument('--dry-run', action='store_true', dest='dry_run',
+                        help='Print the cron jobs instead of installing them')
+    parser.add_argument('--audio-device', type=str, dest='audio_device', default='alsa/plughw:1,0',
+                        help='Audio device for mpv (default: alsa/plughw:1,0)')
     return parser
 
 def getConfig():
@@ -114,10 +118,14 @@ def getConfig():
     with open(file_path, 'w') as configfile:
         config.write(configfile)
 
-    return lat, lon, method, fajr_azaan_vol, default_azaan_vol, surahBaqarah, surahVolume
+    return lat, lon, method, fajr_azaan_vol, default_azaan_vol, surahBaqarah, surahVolume, args.dry_run, args.audio_device
 
 
-def addAzaanTime (strPrayerName, strPrayerTime, objCronTab, strCommand):
+def addAzaanTime (strPrayerName, strPrayerTime, objCronTab, strCommand, dry_run=False):
+  if dry_run:
+      print(f"[DRY-RUN] Would schedule '{strPrayerName}' at {strPrayerTime}: {strCommand}")
+      return
+
   job = objCronTab.new(command=strCommand,comment=strPrayerName)  
   timeArr = strPrayerTime.split(':')
   hour = timeArr[0]
@@ -128,7 +136,11 @@ def addAzaanTime (strPrayerName, strPrayerTime, objCronTab, strCommand):
   print(job)
   return
 
-def addFriday(strSurahName, objCronTab, strCommand):
+def addFriday(strSurahName, objCronTab, strCommand, dry_run=False):
+  if dry_run:
+      print(f"[DRY-RUN] Would schedule '{strSurahName}' on Fridays at 08:00: {strCommand}")
+      return
+
   job = objCronTab.new(command=strCommand,comment=strSurahName)
   job.minute.on(0)
   job.hour.on(8)
@@ -137,7 +149,11 @@ def addFriday(strSurahName, objCronTab, strCommand):
   print(job)
   return
 
-def addUpdateCronJob (objCronTab, strCommand):
+def addUpdateCronJob (objCronTab, strCommand, dry_run=False):
+  if dry_run:
+      print(f"[DRY-RUN] Would schedule update job daily at 03:15: {strCommand}")
+      return
+
   job = objCronTab.new(command=strCommand)
   job.minute.on(15)
   job.hour.on(3)
@@ -145,7 +161,11 @@ def addUpdateCronJob (objCronTab, strCommand):
   print(job)
   return
 
-def addClearLogsCronJob (objCronTab, strCommand):
+def addClearLogsCronJob (objCronTab, strCommand, dry_run=False):
+  if dry_run:
+      print(f"[DRY-RUN] Would schedule clear logs job monthly: {strCommand}")
+      return
+
   job = objCronTab.new(command=strCommand)
   job.day.on(1)
   job.minute.on(0)
@@ -153,11 +173,57 @@ def addClearLogsCronJob (objCronTab, strCommand):
   job.set_comment(strJobComment)
   print(job)
   return
+
+def get_adhan_file(is_fajr):
+    media_dir = pathjoin(root_dir, 'media')
+    # Get all mp3 files that start with Adhan
+    all_adhans = [f for f in os.listdir(media_dir) if f.startswith('Adhan') and f.endswith('.mp3')]
+
+    fajr_adhans = [f for f in all_adhans if 'fajr' in f.lower()]
+    regular_adhans = [f for f in all_adhans if 'fajr' not in f.lower()]
+
+    selected_file = None
+
+    if is_fajr:
+        if fajr_adhans:
+            selected_file = random.choice(fajr_adhans)
+        elif regular_adhans:
+            selected_file = random.choice(regular_adhans)
+        else:
+            selected_file = 'Adhan-fajr.mp3' # Fallback
+    else:
+        if regular_adhans:
+            selected_file = random.choice(regular_adhans)
+        elif fajr_adhans:
+            selected_file = random.choice(fajr_adhans)
+        else:
+            selected_file = 'Adhan-Makkah1.mp3' # Fallback
+
+    return pathjoin(media_dir, selected_file)
+
+def get_command(is_fajr, audio_device):
+    adhan_file = get_adhan_file(is_fajr)
+    return (
+        f"echo \"$(date) Playing {'Fajr ' if is_fajr else ''}Azaan\" >> {root_dir}/adhan.log 2>&1 && "
+        f"mpv --audio-device={audio_device} --volume=100 --no-video "
+        f"{adhan_file} >> {root_dir}/adhan.log 2>&1 && "
+        f"echo \"$(date) Playing Dua\" >> {root_dir}/adhan.log 2>&1 && "
+        f"mpv --audio-device={audio_device} --volume=100 --no-video "
+        f"{root_dir}/media/after-adhan-dua.mp3 >> {root_dir}/adhan.log 2>&1"
+    )
+
 # ---------------------------------
 # ---------------------------------
 # HELPER FUNCTIONS END
 # Merge args with saved values if any
-lat, lon, method, fajr_azaan_vol, default_azaan_vol, surahBaqarah, surahVolume = getConfig()
+lat, lon, method, fajr_azaan_vol, default_azaan_vol, surahBaqarah, surahVolume, dry_run, audio_device = getConfig()
+
+if dry_run:
+    system_cron = None
+    print("Running in DRY-RUN mode. No cron jobs will be installed.")
+else:
+    system_cron = CronTab(user=True)
+
 # Set calculation method, utcOffset and dst here
 # By default system timezone will be used
 # --------------------
@@ -167,34 +233,18 @@ utcOffset = -(time.timezone/float(3600))
 isDst = time.localtime().tm_isdst
 
 now = datetime.datetime.now()
-strPlayFajrAzaanMP3Command = (
-    f"echo \"$(date) Playing Fajr Azaan\" >> {root_dir}/adhan.log 2>&1 && "
-    f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
-    f"{root_dir}/media/Adhan-fajr.mp3 >> {root_dir}/adhan.log 2>&1 && "
-    f"echo \"$(date) Playing Dua\" >> {root_dir}/adhan.log 2>&1 && "
-    f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
-    f"{root_dir}/media/after-adhan-dua.mp3 >> {root_dir}/adhan.log 2>&1"
-)
-
-strPlayAzaanMP3Command = (
-    f"echo \"$(date) Playing Azaan\" >> {root_dir}/adhan.log 2>&1 && "
-    f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
-    f"{root_dir}/media/Adhan-Makkah1.mp3 >> {root_dir}/adhan.log 2>&1 && "
-    f"echo \"$(date) Playing Dua\" >> {root_dir}/adhan.log 2>&1 && "
-    f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
-    f"{root_dir}/media/after-adhan-dua.mp3 >> {root_dir}/adhan.log 2>&1"
-)
 
 strUpdateCommand = f"python3 {root_dir}/updateAzaanTimers.py >> {root_dir}/adhan.log 2>&1"
 strClearLogsCommand = f"truncate -s 0 {root_dir}/adhan.log 2>&1"
 strJobComment = "rpiAdhanClockJob"
 strSurahBaqarahMP3Command = (
     f"echo \"$(date) Playing Surah Baqarah\" >> {root_dir}/adhan.log 2>&1 && "
-    f"mpv --audio-device=alsa/plughw:1,0 --volume=0 --no-video "
+    f"mpv --audio-device={audio_device} --volume=0 --no-video "
     f"{root_dir}/media/002-surah-baqarah-mishary.mp3 >> {root_dir}/adhan.log 2>&1"
 )
 # Remove existing jobs created by this script
-system_cron.remove_all(comment=strJobComment)
+if not dry_run:
+    system_cron.remove_all(comment=strJobComment)
 
 # Calculate prayer times
 times = PT.getTimes((now.year,now.month,now.day), (lat, lon), utcOffset, isDst)
@@ -220,35 +270,36 @@ print("---------------------------------")
 print("Cron jobs scheduled")
 print("---------------------------------")
 print("Fajr:")
-addAzaanTime('fajr',times['fajr'],system_cron,strPlayFajrAzaanMP3Command)
+addAzaanTime('fajr',times['fajr'],system_cron,get_command(True, audio_device), dry_run)
 print("---------------------------------")
 print("Dhur:")
-addAzaanTime('dhuhr',times['dhuhr'],system_cron,strPlayAzaanMP3Command)
+addAzaanTime('dhuhr',times['dhuhr'],system_cron,get_command(False, audio_device), dry_run)
 print("---------------------------------")
 print("Asr:")
-addAzaanTime('asr',times['asr'],system_cron,strPlayAzaanMP3Command)
+addAzaanTime('asr',times['asr'],system_cron,get_command(False, audio_device), dry_run)
 print("---------------------------------")
 print("Maghrib:")
-addAzaanTime('maghrib',times['maghrib'],system_cron,strPlayAzaanMP3Command)
+addAzaanTime('maghrib',times['maghrib'],system_cron,get_command(False, audio_device), dry_run)
 print("---------------------------------")
 print("Isha:")
-addAzaanTime('isha',times['isha'],system_cron,strPlayAzaanMP3Command)
+addAzaanTime('isha',times['isha'],system_cron,get_command(False, audio_device), dry_run)
 print("---------------------------------")
 print("Friday Surah Baqarah:")
 if surahBaqarah == True:
-    addFriday('Surah Baqarah', system_cron, strSurahBaqarahMP3Command)
+    addFriday('Surah Baqarah', system_cron, strSurahBaqarahMP3Command, dry_run)
 print("---------------------------------")
 print()
 # Run this script again overnight
 print("Update Azaan Timers(Daily @ night):")
-addUpdateCronJob(system_cron, strUpdateCommand)
+addUpdateCronJob(system_cron, strUpdateCommand, dry_run)
 print("---------------------------------")
 print("Clear logs(Monthly):")
 # Clear the logs every month
-addClearLogsCronJob(system_cron,strClearLogsCommand)
+addClearLogsCronJob(system_cron,strClearLogsCommand, dry_run)
 print("---------------------------------")
 print()
 
-system_cron.write_to_user(user=True)
+if not dry_run:
+    system_cron.write_to_user(user=True)
 print('Script execution finished at: ' + str(now))
 
