@@ -3,6 +3,8 @@
 import datetime
 import time
 import sys
+import os
+import random
 from os.path import dirname, abspath, join as pathjoin
 import argparse
 from configparser import ConfigParser
@@ -153,6 +155,45 @@ def addClearLogsCronJob (objCronTab, strCommand):
   job.set_comment(strJobComment)
   print(job)
   return
+
+def get_adhan_file(is_fajr):
+    media_dir = pathjoin(root_dir, 'media')
+    # Get all mp3 files that start with Adhan
+    all_adhans = [f for f in os.listdir(media_dir) if f.startswith('Adhan') and f.endswith('.mp3')]
+
+    fajr_adhans = [f for f in all_adhans if 'fajr' in f.lower()]
+    regular_adhans = [f for f in all_adhans if 'fajr' not in f.lower()]
+
+    selected_file = None
+
+    if is_fajr:
+        if fajr_adhans:
+            selected_file = random.choice(fajr_adhans)
+        elif regular_adhans:
+            selected_file = random.choice(regular_adhans)
+        else:
+            selected_file = 'Adhan-fajr.mp3' # Fallback
+    else:
+        if regular_adhans:
+            selected_file = random.choice(regular_adhans)
+        elif fajr_adhans:
+            selected_file = random.choice(fajr_adhans)
+        else:
+            selected_file = 'Adhan-Makkah1.mp3' # Fallback
+
+    return pathjoin(media_dir, selected_file)
+
+def get_command(is_fajr):
+    adhan_file = get_adhan_file(is_fajr)
+    return (
+        f"echo \"$(date) Playing {'Fajr ' if is_fajr else ''}Azaan\" >> {root_dir}/adhan.log 2>&1 && "
+        f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
+        f"{adhan_file} >> {root_dir}/adhan.log 2>&1 && "
+        f"echo \"$(date) Playing Dua\" >> {root_dir}/adhan.log 2>&1 && "
+        f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
+        f"{root_dir}/media/after-adhan-dua.mp3 >> {root_dir}/adhan.log 2>&1"
+    )
+
 # ---------------------------------
 # ---------------------------------
 # HELPER FUNCTIONS END
@@ -167,23 +208,6 @@ utcOffset = -(time.timezone/float(3600))
 isDst = time.localtime().tm_isdst
 
 now = datetime.datetime.now()
-strPlayFajrAzaanMP3Command = (
-    f"echo \"$(date) Playing Fajr Azaan\" >> {root_dir}/adhan.log 2>&1 && "
-    f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
-    f"{root_dir}/media/Adhan-fajr.mp3 >> {root_dir}/adhan.log 2>&1 && "
-    f"echo \"$(date) Playing Dua\" >> {root_dir}/adhan.log 2>&1 && "
-    f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
-    f"{root_dir}/media/after-adhan-dua.mp3 >> {root_dir}/adhan.log 2>&1"
-)
-
-strPlayAzaanMP3Command = (
-    f"echo \"$(date) Playing Azaan\" >> {root_dir}/adhan.log 2>&1 && "
-    f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
-    f"{root_dir}/media/Adhan-Makkah1.mp3 >> {root_dir}/adhan.log 2>&1 && "
-    f"echo \"$(date) Playing Dua\" >> {root_dir}/adhan.log 2>&1 && "
-    f"mpv --audio-device=alsa/plughw:1,0 --volume=100 --no-video "
-    f"{root_dir}/media/after-adhan-dua.mp3 >> {root_dir}/adhan.log 2>&1"
-)
 
 strUpdateCommand = f"python3 {root_dir}/updateAzaanTimers.py >> {root_dir}/adhan.log 2>&1"
 strClearLogsCommand = f"truncate -s 0 {root_dir}/adhan.log 2>&1"
@@ -220,19 +244,19 @@ print("---------------------------------")
 print("Cron jobs scheduled")
 print("---------------------------------")
 print("Fajr:")
-addAzaanTime('fajr',times['fajr'],system_cron,strPlayFajrAzaanMP3Command)
+addAzaanTime('fajr',times['fajr'],system_cron,get_command(True))
 print("---------------------------------")
 print("Dhur:")
-addAzaanTime('dhuhr',times['dhuhr'],system_cron,strPlayAzaanMP3Command)
+addAzaanTime('dhuhr',times['dhuhr'],system_cron,get_command(False))
 print("---------------------------------")
 print("Asr:")
-addAzaanTime('asr',times['asr'],system_cron,strPlayAzaanMP3Command)
+addAzaanTime('asr',times['asr'],system_cron,get_command(False))
 print("---------------------------------")
 print("Maghrib:")
-addAzaanTime('maghrib',times['maghrib'],system_cron,strPlayAzaanMP3Command)
+addAzaanTime('maghrib',times['maghrib'],system_cron,get_command(False))
 print("---------------------------------")
 print("Isha:")
-addAzaanTime('isha',times['isha'],system_cron,strPlayAzaanMP3Command)
+addAzaanTime('isha',times['isha'],system_cron,get_command(False))
 print("---------------------------------")
 print("Friday Surah Baqarah:")
 if surahBaqarah == True:
