@@ -1,0 +1,58 @@
+{
+  "pluginAlias": "RasppiAdhan",
+  "pluginType": "platform",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "latitude": {
+        "title": "Latitude",
+        "type": "number",
+        "required": true,
+        "description": "Latitude of your location (e.g. 30.345621)"
+      },
+      "longitude": {
+        "title": "Longitude",
+        "type": "number",
+        "required": true,
+        "description": "Longitude of your location (e.g. -97.512126)"
+      },
+      "method": {
+        "title": "Calculation Method",
+        "type": "string",
+        "default": "NorthAmerica",
+        "enum": [
+          "MuslimWorldLeague",
+          "Egyptian",
+          "Karachi",
+          "UmmAlQura",
+          "Dubai",
+          "MoonsightingCommittee",
+          "NorthAmerica",
+          "Kuwait",
+          "Qatar",
+          "Singapore",
+          "Tehran",
+          "Turkey"
+        ],
+        "description": "Method for calculating prayer times."
+      },
+      "playAudio": {
+        "title": "Play Audio Locally",
+        "type": "boolean",
+        "default": true,
+        "description": "If true, plays the Adhan audio on the device running Homebridge (Raspberry Pi)."
+      },
+      "audioDevice": {
+        "title": "Audio Device",
+        "type": "string",
+        "default": "alsa/plughw:1,0",
+        "description": "Audio device for mpv (e.g. alsa/plughw:1,0). Leave default if unsure."
+      },
+      "mediaPath": {
+        "title": "Media Path",
+        "type": "string",
+        "description": "Absolute path to the media directory containing mp3 files. Defaults to ../media relative to the plugin."
+      }
+    }
+  }
+}
