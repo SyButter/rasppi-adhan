@@ -1,0 +1,23 @@
+{
+  "name": "homebridge-rasppi-adhan",
+  "version": "1.0.0",
+  "description": "Homebridge plugin to trigger Adhan and play audio on Raspberry Pi",
+  "keywords": [
+    "homebridge-plugin",
+    "adhan",
+    "prayer",
+    "islam"
+  ],
+  "engines": {
+    "node": ">=14.18.1",
+    "homebridge": ">=1.4.0"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "adhan": "^4.4.4",
+    "node-schedule": "^2.1.1"
+  }
+}

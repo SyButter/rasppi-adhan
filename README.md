@@ -224,4 +224,17 @@ EOF
 chown -R pi:pi /home/pi/.config
 ```
 
+---
+
+## 🏠 Homebridge Plugin & HomePod
+
+You can also use the included Homebridge plugin to integrate with Apple HomeKit. This allows you to trigger automations (like playing audio on your HomePod) when Adhan time starts.
+
+See [homebridge-plugin/README.md](homebridge-plugin/README.md) for full instructions.
+
+### Quick Start
+1.  Install the plugin (located in `homebridge-plugin`).
+2.  Configure it in Homebridge.
+3.  Create an automation in the Apple Home app: "When 'Adhan Trigger' Turns On, Play Audio on HomePod".
+
 Set–and–forget – your Pi will ring adhans, scrape upcoming Jumʿah, and display both on screen every day!
