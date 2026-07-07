@@ -3,6 +3,9 @@
 *.pyc
 adhan.log
 settings.ini
+adhans.json
+adhan-display/display_config.json
+.DS_Store
 __pycache__
 .settings
 before-hooks.d/*.sh

@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "adhan-admin",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["app.py"],
+      "cwd": "webadmin",
+      "port": 8080
+    },
+    {
+      "name": "adhan-display",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8000"],
+      "cwd": "adhan-display",
+      "port": 8000
+    }
+  ]
+}

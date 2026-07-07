@@ -1,12 +1,28 @@
 // —— CONFIG ——
-const latitude  = 40.207527;   // your latitude
-const longitude =  -74.829727;  // your longitude
-const method    = 'ISNA';    // calculation method
+// Defaults; overridden at load by adhan-display/display_config.json, which the
+// admin panel / updateAzaanTimers.py keep in sync with settings.ini.
+let latitude  = 40.207527;   // your latitude
+let longitude =  -74.829727;  // your longitude
+let method    = 'ISNA';      // calculation method
 // ——————————
 
-const pt = new PrayTimes(method);
+let pt = new PrayTimes(method);
 // override ISNA’s default 15° fajr angle to 18°
 pt.adjust({ fajr: 18 });
+
+// Pull the shared config so this display matches the speaker schedule.
+async function loadConfig() {
+  try {
+    const cfg = await fetch('display_config.json', { cache: 'no-store' }).then(r => r.json());
+    if (typeof cfg.latitude  === 'number') latitude  = cfg.latitude;
+    if (typeof cfg.longitude === 'number') longitude = cfg.longitude;
+    if (cfg.method) method = cfg.method;
+    pt = new PrayTimes(method);
+    pt.adjust({ fajr: 18 });
+  } catch (err) {
+    console.warn('Using built-in location defaults (display_config.json not found):', err);
+  }
+}
 
 function pad(n) { return (n<10?'0':'')+n; }
 
@@ -130,5 +146,5 @@ function refreshAll() {
   renderNextJummah();
 }
 
-refreshAll();
-scheduleDaily(refreshAll, 2);
+loadConfig().then(refreshAll);
+scheduleDaily(async () => { await loadConfig(); refreshAll(); }, 2);
