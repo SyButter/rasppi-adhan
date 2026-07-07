@@ -268,7 +268,22 @@ The login is HTTP Basic. Set the password in `settings.ini`:
 password = your-password-here      # default is "adhan" — change it
 ```
 
-### Run it as a service (optional)
+### Auto-start everything on boot (recommended)
+
+One script installs dependencies and sets up systemd services so the admin
+panel (`:8080`) and wall display (`:8000`) come back automatically after any
+reboot or power outage, and refreshes the adhan cron jobs. Paths and user are
+auto-detected:
+
+```bash
+cd ~/adhan-disp          # your repo folder
+./install-services.sh                 # servers + cron
+./install-services.sh --with-kiosk    # also set up the full-screen kiosk browser
+```
+
+Adhan playback itself runs from cron, which already survives reboots on its own.
+
+### Run it as a service (optional, manual)
 
 ```bash
 sudo tee /etc/systemd/system/adhan-admin.service <<EOF
