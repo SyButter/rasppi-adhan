@@ -172,6 +172,7 @@
         <button class="btn secondary" onclick="testPlay('fajr')">Test Fajr</button>
         <button class="btn secondary" onclick="testPlay('regular')">Test regular</button>
         <button class="btn secondary" onclick="testPlay('surah')">Test Surah</button>
+        <button class="btn danger" id="stopBtn">Stop playback</button>
       </div>
     </section>
   </main>
@@ -323,6 +324,11 @@
       catch (e) { toast(e.message, true); }
     }
     window.testPlay = testPlay;
+
+    $("stopBtn").onclick = async () => {
+      try { await api("/api/stop", { method: "POST" }); toast("Playback stopped"); }
+      catch (e) { toast(e.message, true); }
+    };
 
     loadSettings().catch((e) => toast(e.message, true));
     loadAdhans().catch((e) => toast(e.message, true));

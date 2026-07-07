@@ -244,6 +244,16 @@ def play_test():
         return jsonify({"ok": False, "error": str(exc)}), 500
 
 
+@app.route("/api/stop", methods=["POST"])
+@requires_auth
+def stop_playback():
+    """Stop any adhan/dua currently playing on the Pi's speakers."""
+    # pkill returns exit code 1 when nothing matched; that's not an error here.
+    subprocess.run(["pkill", "-f", "play_adhan.py"])
+    subprocess.run(["pkill", "mpv"])
+    return jsonify({"ok": True})
+
+
 @app.route("/api/times", methods=["GET"])
 @requires_auth
 def prayer_times():
