@@ -200,6 +200,14 @@ else:
 # By default system timezone will be used
 # --------------------
 PT.setMethod(method)
+# Apply custom Fajr/Isha angles and Asr madhab from settings.ini [CALC].
+_calc = adhan_config.load_settings()
+_adjust = {'asr': _calc['asr_method']}
+if _calc['fajr_angle'] is not None:
+    _adjust['fajr'] = _calc['fajr_angle']
+if _calc['isha_angle'] is not None:
+    _adjust['isha'] = _calc['isha_angle']
+PT.adjust(_adjust)
 # --------------------
 utcOffset = -(time.timezone/float(3600))
 isDst = time.localtime().tm_isdst

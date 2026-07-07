@@ -4,11 +4,20 @@
 let latitude  = 40.207527;   // your latitude
 let longitude =  -74.829727;  // your longitude
 let method    = 'ISNA';      // calculation method
+let fajrAngle = null;        // custom Fajr angle (null = method default)
+let ishaAngle = null;        // custom Isha angle (null = method default)
+let asrMethod = 'Standard';  // 'Standard' or 'Hanafi' (later Asr)
 // ——————————
 
-let pt = new PrayTimes(method);
-// override ISNA’s default 15° fajr angle to 18°
-pt.adjust({ fajr: 18 });
+let pt;
+function buildPt() {
+  pt = new PrayTimes(method);
+  const adj = { asr: asrMethod };
+  if (fajrAngle !== null) adj.fajr = fajrAngle;
+  if (ishaAngle !== null) adj.isha = ishaAngle;
+  pt.adjust(adj);
+}
+buildPt();
 
 // Pull the shared config so this display matches the speaker schedule.
 async function loadConfig() {
@@ -17,8 +26,10 @@ async function loadConfig() {
     if (typeof cfg.latitude  === 'number') latitude  = cfg.latitude;
     if (typeof cfg.longitude === 'number') longitude = cfg.longitude;
     if (cfg.method) method = cfg.method;
-    pt = new PrayTimes(method);
-    pt.adjust({ fajr: 18 });
+    fajrAngle = (typeof cfg.fajr_angle === 'number') ? cfg.fajr_angle : null;
+    ishaAngle = (typeof cfg.isha_angle === 'number') ? cfg.isha_angle : null;
+    if (cfg.asr_method) asrMethod = cfg.asr_method;
+    buildPt();
   } catch (err) {
     console.warn('Using built-in location defaults (display_config.json not found):', err);
   }

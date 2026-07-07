@@ -108,7 +108,24 @@
           <select id="method"></select>
         </div>
       </div>
-      <div class="hint">Used by both the speaker schedule and the wall display.</div>
+      <div class="row" style="margin-top:.9rem">
+        <div>
+          <label for="fajrAngle">Fajr angle (°)</label>
+          <input id="fajrAngle" type="number" step="0.1" min="0" max="30" placeholder="method default" />
+        </div>
+        <div>
+          <label for="ishaAngle">Isha angle (°)</label>
+          <input id="ishaAngle" type="number" step="0.1" min="0" max="30" placeholder="method default" />
+        </div>
+        <div>
+          <label for="asrMethod">Asr madhab</label>
+          <select id="asrMethod"></select>
+        </div>
+      </div>
+      <div class="hint">
+        Leave an angle blank to use the method's default. Asr: Standard (Shafi'i/Maliki/Hanbali) or Hanafi (later Asr).
+        Used by both the speaker schedule and the wall display.
+      </div>
       <div class="actions">
         <button class="btn secondary" id="saveLocation">Save location</button>
         <button class="btn secondary" id="showTimes">Preview today's times</button>
@@ -218,12 +235,17 @@
     bindVol("volSurah", "volSurahVal");
 
     async function loadSettings() {
-      const { settings, methods } = await api("/api/settings");
+      const { settings, methods, asr_methods } = await api("/api/settings");
       $("method").innerHTML = methods
         .map((m) => `<option ${m === settings.method ? "selected" : ""}>${m}</option>`)
         .join("");
+      $("asrMethod").innerHTML = asr_methods
+        .map((m) => `<option ${m === settings.asr_method ? "selected" : ""}>${m}</option>`)
+        .join("");
       $("lat").value = settings.lat;
       $("lon").value = settings.lon;
+      $("fajrAngle").value = settings.fajr_angle == null ? "" : settings.fajr_angle;
+      $("ishaAngle").value = settings.isha_angle == null ? "" : settings.isha_angle;
       $("volDefault").value = settings.default_azaan_vol;
       $("volDefaultVal").textContent = settings.default_azaan_vol;
       $("volFajr").value = settings.fajr_azaan_vol;
@@ -255,8 +277,12 @@
     }
 
     $("saveLocation").onclick = () =>
-      saveSettings({ lat: $("lat").value, lon: $("lon").value, method: $("method").value },
-        "Location saved — click Apply to reschedule");
+      saveSettings({
+        lat: $("lat").value, lon: $("lon").value, method: $("method").value,
+        fajr_angle: $("fajrAngle").value === "" ? null : $("fajrAngle").value,
+        isha_angle: $("ishaAngle").value === "" ? null : $("ishaAngle").value,
+        asr_method: $("asrMethod").value,
+      }, "Saved — click Apply to reschedule");
     $("saveVolumes").onclick = () =>
       saveSettings({
         default_azaan_vol: +$("volDefault").value,

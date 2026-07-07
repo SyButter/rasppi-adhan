@@ -29,6 +29,7 @@ DISPLAY_CONFIG_PATH = pathjoin(ROOT_DIR, "adhan-display", "display_config.json")
 
 DEFAULT_AUDIO_DEVICE = "alsa/plughw:1,0"
 CALC_METHODS = ["MWL", "ISNA", "Egypt", "Makkah", "Karachi", "Tehran", "Jafari"]
+ASR_METHODS = ["Standard", "Hanafi"]  # Standard = Shafi'i/Maliki/Hanbali; Hanafi = later Asr
 PRAYER_NAMES = ["fajr", "dhuhr", "asr", "maghrib", "isha"]
 
 # Reasonable defaults used when a key is missing from settings.ini.
@@ -43,6 +44,9 @@ _DEFAULTS = {
     "audio_device": DEFAULT_AUDIO_DEVICE,
     "admin_username": "admin",
     "admin_password": "adhan",
+    "fajr_angle": None,   # None = use the calculation method's default
+    "isha_angle": None,   # None = use the calculation method's default
+    "asr_method": "Standard",
 }
 
 
@@ -66,6 +70,15 @@ def _to_float(value, fallback):
         return float(value)
     except (TypeError, ValueError):
         return fallback
+
+
+def _to_float_or_none(value):
+    if value is None or str(value).strip() == "":
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
 
 
 def load_settings():
@@ -93,6 +106,12 @@ def load_settings():
         # Per-prayer sound toggle. Times still show on the display when muted;
         # only the adhan playback is skipped. Default: every prayer plays.
         "prayers": {p: _to_bool(get("PRAYERS", p), True) for p in PRAYER_NAMES},
+        # Custom Fajr/Isha angles (None = method default) and Asr madhab.
+        "fajr_angle": _to_float_or_none(get("CALC", "fajr_angle")),
+        "isha_angle": _to_float_or_none(get("CALC", "isha_angle")),
+        "asr_method": (get("CALC", "asr_method", _DEFAULTS["asr_method"]) or _DEFAULTS["asr_method"])
+        if (get("CALC", "asr_method", _DEFAULTS["asr_method"]) or _DEFAULTS["asr_method"]) in ASR_METHODS
+        else _DEFAULTS["asr_method"],
     }
 
 
@@ -135,6 +154,11 @@ def save_settings(values):
         "password": current["admin_password"],
     }
     config["PRAYERS"] = {p: str(current["prayers"][p]) for p in PRAYER_NAMES}
+    config["CALC"] = {
+        "fajr_angle": "" if current["fajr_angle"] is None else str(current["fajr_angle"]),
+        "isha_angle": "" if current["isha_angle"] is None else str(current["isha_angle"]),
+        "asr_method": current["asr_method"],
+    }
 
     with open(SETTINGS_PATH, "w") as fh:
         config.write(fh)
@@ -154,6 +178,9 @@ def write_display_config(settings=None):
         "latitude": settings["lat"],
         "longitude": settings["lon"],
         "method": settings["method"],
+        "fajr_angle": settings["fajr_angle"],
+        "isha_angle": settings["isha_angle"],
+        "asr_method": settings["asr_method"],
     }
     try:
         with open(DISPLAY_CONFIG_PATH, "w") as fh:

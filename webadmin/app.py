@@ -77,7 +77,11 @@ def get_settings():
     settings = cfg.load_settings()
     settings.pop("admin_username", None)  # never expose credentials
     settings.pop("admin_password", None)
-    return jsonify({"settings": settings, "methods": cfg.CALC_METHODS})
+    return jsonify({
+        "settings": settings,
+        "methods": cfg.CALC_METHODS,
+        "asr_methods": cfg.ASR_METHODS,
+    })
 
 
 @app.route("/api/settings", methods=["POST"])
@@ -100,6 +104,25 @@ def post_settings():
         if data["method"] not in cfg.CALC_METHODS:
             return jsonify({"error": "Unknown calculation method"}), 400
         updates["method"] = data["method"]
+
+    for key in ("fajr_angle", "isha_angle"):
+        if key in data:
+            raw = data[key]
+            if raw in (None, ""):
+                updates[key] = None
+            else:
+                try:
+                    angle = float(raw)
+                except (TypeError, ValueError):
+                    return jsonify({"error": f"Invalid angle for {key}"}), 400
+                if not (0 < angle < 30):
+                    return jsonify({"error": f"{key} must be between 0 and 30 degrees"}), 400
+                updates[key] = angle
+
+    if "asr_method" in data:
+        if data["asr_method"] not in cfg.ASR_METHODS:
+            return jsonify({"error": "Unknown Asr method"}), 400
+        updates["asr_method"] = data["asr_method"]
 
     for key in ("default_azaan_vol", "fajr_azaan_vol", "surah_vol"):
         if key in data:

@@ -234,6 +234,10 @@ home network) to manage everything without editing files over SSH:
 - **Location & method** — edit lat/lon and calculation method. Written to
   `settings.ini` **and** mirrored to `adhan-display/display_config.json`, so the
   speaker schedule and the wall display always agree (one source of truth).
+- **Custom angles & Asr madhab** — override the Fajr/Isha twilight angles
+  (leave blank to use the method default) and pick the Asr calculation:
+  Standard (Shafi'i/Maliki/Hanbali) or Hanafi (later Asr). Applied identically
+  by both the audio scheduler and the display.
 - **Volumes** — regular adhan, Fajr adhan, and Friday Surah Baqarah volumes
   (mpv percentage, 0–130; 100 = normal). These now take effect immediately.
 - **Friday Surah Baqarah** — toggle on/off.
