@@ -54,11 +54,13 @@
     .vol .val { min-width: 2.5rem; text-align: right; font-variant-numeric: tabular-nums; }
     .switch { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; }
     .adhan {
-      display: grid; grid-template-columns: auto 1fr auto auto auto; gap: .75rem;
+      display: flex; flex-wrap: wrap; gap: .5rem .75rem;
       align-items: center; padding: .6rem 0; border-bottom: 1px solid var(--border);
     }
+    .adhan > .info { flex: 1 1 140px; min-width: 0; }
+    .adhan audio { flex: 1 1 190px; min-width: 0; max-width: 320px; }
     .adhan:last-child { border-bottom: none; }
-    .adhan .name { font-size: .92rem; word-break: break-all; }
+    .adhan .name { font-size: .92rem; overflow-wrap: anywhere; }
     .adhan .meta { font-size: .75rem; color: var(--muted); }
     .adhan select { width: auto; padding: .3rem .5rem; font-size: .8rem; }
     .pill { font-size: .72rem; padding: .12rem .5rem; border-radius: 999px; background: var(--card2); color: var(--muted); }
@@ -153,6 +155,16 @@
     </section>
 
     <section class="card">
+      <h2>Prayer playback</h2>
+      <div class="hint" style="margin-top:0">
+        Turn the adhan sound off for prayers you want to sleep through (e.g. after a night shift).
+        Times still show on the display — only the sound is skipped. Takes effect on the next prayer.
+      </div>
+      <div id="prayerToggles" style="margin-top:.8rem; display:grid; gap:.55rem;">Loading…</div>
+      <div class="actions"><button class="btn secondary" id="savePrayers">Save</button></div>
+    </section>
+
+    <section class="card">
       <h2>Adhan library</h2>
       <div class="hint" style="margin-top:0">
         Toggle which adhans are eligible for the random pick, set each as Fajr or Regular, preview, or delete.
@@ -219,6 +231,14 @@
       $("volSurah").value = settings.surah_vol;
       $("volSurahVal").textContent = settings.surah_vol;
       $("fridayOn").checked = settings.play_surah_baqarah;
+
+      const labels = { fajr: "Fajr", dhuhr: "Dhuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha" };
+      $("prayerToggles").innerHTML = Object.keys(labels).map((p) => `
+        <label class="switch">
+          <input type="checkbox" class="pray" data-prayer="${p}" style="width:auto"
+            ${settings.prayers && settings.prayers[p] ? "checked" : ""} />
+          Play ${labels[p]} adhan
+        </label>`).join("");
     }
 
     async function saveSettings(payload, msg) {
@@ -246,6 +266,11 @@
     $("saveFriday").onclick = () =>
       saveSettings({ play_surah_baqarah: $("fridayOn").checked },
         "Saved — click Apply to reschedule");
+    $("savePrayers").onclick = () => {
+      const prayers = {};
+      document.querySelectorAll(".pray").forEach((c) => (prayers[c.dataset.prayer] = c.checked));
+      saveSettings({ prayers }, "Prayer playback saved");
+    };
 
     async function loadAdhans() {
       const { adhans } = await api("/api/adhans");
@@ -255,7 +280,7 @@
           <label class="switch" title="Include in random pick">
             <input type="checkbox" class="en" style="width:auto" ${a.enabled ? "checked" : ""} />
           </label>
-          <div>
+          <div class="info">
             <div class="name">${a.name}</div>
             <div class="meta">${a.size_mb} MB</div>
           </div>

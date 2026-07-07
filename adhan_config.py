@@ -29,6 +29,7 @@ DISPLAY_CONFIG_PATH = pathjoin(ROOT_DIR, "adhan-display", "display_config.json")
 
 DEFAULT_AUDIO_DEVICE = "alsa/plughw:1,0"
 CALC_METHODS = ["MWL", "ISNA", "Egypt", "Makkah", "Karachi", "Tehran", "Jafari"]
+PRAYER_NAMES = ["fajr", "dhuhr", "asr", "maghrib", "isha"]
 
 # Reasonable defaults used when a key is missing from settings.ini.
 _DEFAULTS = {
@@ -89,6 +90,9 @@ def load_settings():
         "audio_device": get("AUDIO", "device", _DEFAULTS["audio_device"]) or _DEFAULTS["audio_device"],
         "admin_username": get("ADMIN", "username", _DEFAULTS["admin_username"]) or _DEFAULTS["admin_username"],
         "admin_password": get("ADMIN", "password", _DEFAULTS["admin_password"]) or _DEFAULTS["admin_password"],
+        # Per-prayer sound toggle. Times still show on the display when muted;
+        # only the adhan playback is skipped. Default: every prayer plays.
+        "prayers": {p: _to_bool(get("PRAYERS", p), True) for p in PRAYER_NAMES},
     }
 
 
@@ -99,7 +103,14 @@ def save_settings(values):
     Returns the merged settings dict that was written.
     """
     current = load_settings()
-    current.update({k: v for k, v in values.items() if k in current})
+
+    # Merge the per-prayer toggle dict key-by-key so a partial update is fine.
+    if isinstance(values.get("prayers"), dict):
+        for name, on in values["prayers"].items():
+            if name in current["prayers"]:
+                current["prayers"][name] = bool(on)
+
+    current.update({k: v for k, v in values.items() if k in current and k != "prayers"})
 
     config = ConfigParser()
     # Preserve any unrelated sections that might already exist.
@@ -123,6 +134,7 @@ def save_settings(values):
         "username": current["admin_username"],
         "password": current["admin_password"],
     }
+    config["PRAYERS"] = {p: str(current["prayers"][p]) for p in PRAYER_NAMES}
 
     with open(SETTINGS_PATH, "w") as fh:
         config.write(fh)

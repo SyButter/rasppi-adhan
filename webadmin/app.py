@@ -115,6 +115,11 @@ def post_settings():
     if "audio_device" in data and str(data["audio_device"]).strip():
         updates["audio_device"] = str(data["audio_device"]).strip()
 
+    if isinstance(data.get("prayers"), dict):
+        updates["prayers"] = {
+            k: bool(v) for k, v in data["prayers"].items() if k in cfg.PRAYER_NAMES
+        }
+
     saved = cfg.save_settings(updates)
     saved.pop("admin_username", None)
     saved.pop("admin_password", None)

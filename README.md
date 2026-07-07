@@ -237,6 +237,9 @@ home network) to manage everything without editing files over SSH:
 - **Volumes** — regular adhan, Fajr adhan, and Friday Surah Baqarah volumes
   (mpv percentage, 0–130; 100 = normal). These now take effect immediately.
 - **Friday Surah Baqarah** — toggle on/off.
+- **Prayer playback** — mute the adhan sound for individual prayers (e.g. Fajr
+  and Dhuhr after a night shift). Times still show on the display; only the
+  sound is skipped, and it takes effect on the next prayer with no reschedule.
 - **Adhan library** — upload new `.mp3` adhans, preview them in-browser, delete
   them, mark each as *Fajr* or *Regular*, and toggle which are eligible for the
   random pick.

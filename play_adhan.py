@@ -67,6 +67,11 @@ def main():
         play(SURAH_PATH, settings["surah_vol"], device)
         return
 
+    # Per-prayer sound toggle (e.g. mute Fajr/Dhuhr to sleep after a night shift).
+    if prayer in settings["prayers"] and not settings["prayers"][prayer]:
+        log(f"{prayer.capitalize()} adhan is muted in settings; skipping")
+        return
+
     is_fajr = prayer == "fajr"
     volume = settings["fajr_azaan_vol"] if is_fajr else settings["default_azaan_vol"]
     adhan_path = cfg.pick_adhan(is_fajr)
