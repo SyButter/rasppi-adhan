@@ -224,4 +224,93 @@ EOF
 chown -R pi:pi /home/pi/.config
 ```
 
+---
+
+## 🌐 Management website (admin panel)
+
+A small Flask app in `webadmin/` gives you a browser UI (from any device on your
+home network) to manage everything without editing files over SSH:
+
+- **Location & method** — edit lat/lon and calculation method. Written to
+  `settings.ini` **and** mirrored to `adhan-display/display_config.json`, so the
+  speaker schedule and the wall display always agree (one source of truth).
+- **Custom angles & Asr madhab** — override the Fajr/Isha twilight angles
+  (leave blank to use the method default) and pick the Asr calculation:
+  Standard (Shafi'i/Maliki/Hanbali) or Hanafi (later Asr). Applied identically
+  by both the audio scheduler and the display.
+- **Volumes** — regular adhan, Fajr adhan, and Friday Surah Baqarah volumes
+  (mpv percentage, 0–130; 100 = normal). These now take effect immediately.
+- **Friday Surah Baqarah** — toggle on/off.
+- **Prayer playback** — mute the adhan sound for individual prayers (e.g. Fajr
+  and Dhuhr after a night shift). Times still show on the display; only the
+  sound is skipped, and it takes effect on the next prayer with no reschedule.
+- **Adhan library** — upload new `.mp3` adhans, preview them in-browser, delete
+  them, mark each as *Fajr* or *Regular*, and toggle which are eligible for the
+  random pick.
+- **Test on speakers** — fire a test Fajr / regular / Surah playback.
+- **Apply & reschedule** — re-runs `updateAzaanTimers.py` to recompute times and
+  reinstall the cron jobs.
+
+### How playback works now
+
+Cron no longer bakes a fixed file + volume into each job. Instead it runs
+`play_adhan.py <fajr|regular|surah>`, which at play time reads `settings.ini`
+(volume, audio device) and `adhans.json` (the random pool) and picks a random
+enabled adhan. **This means changes you make in the admin panel take effect on
+the very next prayer — no need to click "Apply" for volume or pool changes.**
+"Apply" is only needed after changing location/method (to recompute times) or
+toggling Friday Surah.
+
+### Run it
+
+```bash
+cd ~/adhan-display/webadmin
+pip3 install -r requirements.txt
+python3 app.py            # http://<pi-ip>:8080
+```
+
+There's no login — it's meant to run on your home network only. Don't expose
+port 8080 to the internet.
+
+### Auto-start everything on boot (recommended)
+
+One script installs dependencies and sets up systemd services so the admin
+panel (`:8080`) and wall display (`:8000`) come back automatically after any
+reboot or power outage, and refreshes the adhan cron jobs. Paths and user are
+auto-detected:
+
+```bash
+cd ~/adhan-disp          # your repo folder
+./install-services.sh                 # servers + cron
+./install-services.sh --with-kiosk    # also set up the full-screen kiosk browser
+```
+
+Adhan playback itself runs from cron, which already survives reboots on its own.
+
+### Run it as a service (optional, manual)
+
+```bash
+sudo tee /etc/systemd/system/adhan-admin.service <<EOF
+[Unit]
+Description=Adhan Admin Panel
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/adhan-display/webadmin
+ExecStart=/usr/bin/python3 app.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo systemctl daemon-reload
+sudo systemctl enable --now adhan-admin
+```
+
+> **Note on adhan files:** any file in `media/` named `Adhan*.mp3` is part of the
+> random pool. Uploads through the panel are auto-prefixed with `Adhan-` if
+> needed. Files with `fajr` in the name default to the Fajr category.
+
 Set–and–forget – your Pi will ring adhans, scrape upcoming Jumʿah, and display both on screen every day!

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Adhan Clock — Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #0f1115; --card: #1a1d24; --card2: #22262f; --border: #2c313b;
+      --text: #e7e9ee; --muted: #98a0b0; --accent: #3ea17a; --accent2: #2f7d5e;
+      --danger: #c0554f; --radius: 10px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.5;
+    }
+    header {
+      padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      position: sticky; top: 0; background: var(--bg); z-index: 5;
+    }
+    header h1 { font-size: 1.25rem; font-weight: 600; margin: 0; }
+    header .sub { color: var(--muted); font-size: .85rem; }
+    main { max-width: 860px; margin: 0 auto; padding: 1.5rem; display: grid; gap: 1.25rem; }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.25rem 1.4rem;
+    }
+    .card h2 { font-size: 1rem; font-weight: 600; margin: 0 0 1rem; display: flex; align-items: center; gap: .5rem; }
+    label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: .3rem; }
+    input, select {
+      width: 100%; background: var(--card2); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: .55rem .7rem; font-size: .95rem;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--accent); }
+    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .9rem; }
+    .btn {
+      background: var(--accent); color: #06130d; border: none;
+      border-radius: var(--radius); padding: .55rem 1rem; font-size: .9rem;
+      font-weight: 600; cursor: pointer;
+    }
+    .btn:hover { background: var(--accent2); color: #fff; }
+    .btn.secondary { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+    .btn.secondary:hover { border-color: var(--accent); }
+    .btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); font-weight: 500; }
+    .btn.danger:hover { background: var(--danger); color: #fff; }
+    .btn.small { padding: .3rem .6rem; font-size: .8rem; }
+    .actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1rem; }
+    .vol { display: flex; align-items: center; gap: .8rem; }
+    .vol input[type=range] { flex: 1; accent-color: var(--accent); }
+    .vol .val { min-width: 2.5rem; text-align: right; font-variant-numeric: tabular-nums; }
+    .switch { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; }
+    .adhan {
+      display: flex; flex-wrap: wrap; gap: .5rem .75rem;
+      align-items: center; padding: .6rem 0; border-bottom: 1px solid var(--border);
+    }
+    .adhan > .info { flex: 1 1 140px; min-width: 0; }
+    .adhan audio { flex: 1 1 190px; min-width: 0; max-width: 320px; }
+    .adhan:last-child { border-bottom: none; }
+    .adhan .name { font-size: .92rem; overflow-wrap: anywhere; }
+    .adhan .meta { font-size: .75rem; color: var(--muted); }
+    .adhan select { width: auto; padding: .3rem .5rem; font-size: .8rem; }
+    .pill { font-size: .72rem; padding: .12rem .5rem; border-radius: 999px; background: var(--card2); color: var(--muted); }
+    .pill.on { background: rgba(62,161,122,.18); color: var(--accent); }
+    .toast {
+      position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
+      background: var(--card2); border: 1px solid var(--border); color: var(--text);
+      padding: .7rem 1.1rem; border-radius: var(--radius); font-size: .9rem;
+      opacity: 0; transition: opacity .25s; pointer-events: none; max-width: 90%;
+    }
+    .toast.show { opacity: 1; }
+    .toast.err { border-color: var(--danger); }
+    pre {
+      background: #0b0d11; border: 1px solid var(--border); border-radius: var(--radius);
+      padding: .8rem; font-size: .78rem; color: var(--muted); overflow: auto;
+      max-height: 240px; white-space: pre-wrap; margin: 1rem 0 0;
+    }
+    .hint { font-size: .78rem; color: var(--muted); margin-top: .5rem; }
+    audio { height: 32px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Adhan Clock — Admin</h1>
+      <div class="sub">Manage prayer location, volumes, and adhan library</div>
+    </div>
+    <button class="btn" id="applyBtn">Apply &amp; reschedule</button>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Location &amp; calculation</h2>
+      <div class="row">
+        <div>
+          <label for="lat">Latitude</label>
+          <input id="lat" type="number" step="0.0001" placeholder="40.2075" />
+        </div>
+        <div>
+          <label for="lon">Longitude</label>
+          <input id="lon" type="number" step="0.0001" placeholder="-74.8297" />
+        </div>
+        <div>
+          <label for="method">Method</label>
+          <select id="method"></select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:.9rem">
+        <div>
+          <label for="fajrAngle">Fajr angle (°)</label>
+          <input id="fajrAngle" type="number" step="0.1" min="0" max="30" placeholder="method default" />
+        </div>
+        <div>
+          <label for="ishaAngle">Isha angle (°)</label>
+          <input id="ishaAngle" type="number" step="0.1" min="0" max="30" placeholder="method default" />
+        </div>
+        <div>
+          <label for="asrMethod">Asr madhab</label>
+          <select id="asrMethod"></select>
+        </div>
+      </div>
+      <div class="hint">
+        Leave an angle blank to use the method's default. Asr: Standard (Shafi'i/Maliki/Hanbali) or Hanafi (later Asr).
+        Used by both the speaker schedule and the wall display.
+      </div>
+      <div class="actions">
+        <button class="btn secondary" id="saveLocation">Save location</button>
+        <button class="btn secondary" id="showTimes">Preview today's times</button>
+      </div>
+      <pre id="timesOut" style="display:none"></pre>
+    </section>
+
+    <section class="card">
+      <h2>Volumes</h2>
+      <div style="display:grid; gap:1rem;">
+        <div>
+          <label>Regular adhan volume (Dhuhr / Asr / Maghrib / Isha)</label>
+          <div class="vol">
+            <input id="volDefault" type="range" min="0" max="130" step="1" />
+            <span class="val" id="volDefaultVal">100</span>
+          </div>
+        </div>
+        <div>
+          <label>Fajr adhan volume</label>
+          <div class="vol">
+            <input id="volFajr" type="range" min="0" max="130" step="1" />
+            <span class="val" id="volFajrVal">100</span>
+          </div>
+        </div>
+        <div>
+          <label>Surah Baqarah volume (Fridays)</label>
+          <div class="vol">
+            <input id="volSurah" type="range" min="0" max="130" step="1" />
+            <span class="val" id="volSurahVal">100</span>
+          </div>
+        </div>
+      </div>
+      <div class="hint">100 = normal. 0 = silent. These now take effect immediately.</div>
+      <div class="actions"><button class="btn secondary" id="saveVolumes">Save volumes</button></div>
+    </section>
+
+    <section class="card">
+      <h2>Friday Surah Baqarah</h2>
+      <label class="switch">
+        <input id="fridayOn" type="checkbox" style="width:auto" />
+        Play Surah Baqarah every Friday at 8:00 AM
+      </label>
+      <div class="actions"><button class="btn secondary" id="saveFriday">Save</button></div>
+    </section>
+
+    <section class="card">
+      <h2>Prayer playback</h2>
+      <div class="hint" style="margin-top:0">
+        Turn the adhan sound off for prayers you want to sleep through (e.g. after a night shift).
+        Times still show on the display — only the sound is skipped. Takes effect on the next prayer.
+      </div>
+      <div id="prayerToggles" style="margin-top:.8rem; display:grid; gap:.55rem;">Loading…</div>
+      <div class="actions"><button class="btn secondary" id="savePrayers">Save</button></div>
+    </section>
+
+    <section class="card">
+      <h2>Adhan library</h2>
+      <div class="hint" style="margin-top:0">
+        Toggle which adhans are eligible for the random pick, set each as Fajr or Regular, preview, or delete.
+      </div>
+      <div id="adhanList" style="margin-top:.75rem">Loading…</div>
+      <div style="margin-top:1.1rem; border-top:1px solid var(--border); padding-top:1rem;">
+        <label for="file">Upload a new adhan (.mp3)</label>
+        <input id="file" type="file" accept="audio/mpeg,.mp3" />
+        <div class="actions"><button class="btn" id="uploadBtn">Upload</button></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Test on speakers</h2>
+      <div class="hint" style="margin-top:0">Plays through the Pi's speakers right now.</div>
+      <div class="actions">
+        <button class="btn secondary" onclick="testPlay('fajr')">Test Fajr</button>
+        <button class="btn secondary" onclick="testPlay('regular')">Test regular</button>
+        <button class="btn secondary" onclick="testPlay('surah')">Test Surah</button>
+        <button class="btn danger" id="stopBtn">Stop playback</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let toastTimer;
+    function toast(msg, isErr) {
+      const t = $("toast");
+      t.textContent = msg;
+      t.className = "toast show" + (isErr ? " err" : "");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => (t.className = "toast"), 3200);
+    }
+    async function api(path, opts) {
+      const res = await fetch(path, opts);
+      let data = {};
+      try { data = await res.json(); } catch (e) {}
+      if (!res.ok) throw new Error(data.error || data.output || res.statusText);
+      return data;
+    }
+
+    function bindVol(slider, out) {
+      const s = $(slider), o = $(out);
+      s.addEventListener("input", () => (o.textContent = s.value));
+    }
+    bindVol("volDefault", "volDefaultVal");
+    bindVol("volFajr", "volFajrVal");
+    bindVol("volSurah", "volSurahVal");
+
+    async function loadSettings() {
+      const { settings, methods, asr_methods } = await api("/api/settings");
+      $("method").innerHTML = methods
+        .map((m) => `<option ${m === settings.method ? "selected" : ""}>${m}</option>`)
+        .join("");
+      $("asrMethod").innerHTML = asr_methods
+        .map((m) => `<option ${m === settings.asr_method ? "selected" : ""}>${m}</option>`)
+        .join("");
+      $("lat").value = settings.lat;
+      $("lon").value = settings.lon;
+      $("fajrAngle").value = settings.fajr_angle == null ? "" : settings.fajr_angle;
+      $("ishaAngle").value = settings.isha_angle == null ? "" : settings.isha_angle;
+      $("volDefault").value = settings.default_azaan_vol;
+      $("volDefaultVal").textContent = settings.default_azaan_vol;
+      $("volFajr").value = settings.fajr_azaan_vol;
+      $("volFajrVal").textContent = settings.fajr_azaan_vol;
+      $("volSurah").value = settings.surah_vol;
+      $("volSurahVal").textContent = settings.surah_vol;
+      $("fridayOn").checked = settings.play_surah_baqarah;
+
+      const labels = { fajr: "Fajr", dhuhr: "Dhuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha" };
+      $("prayerToggles").innerHTML = Object.keys(labels).map((p) => `
+        <label class="switch">
+          <input type="checkbox" class="pray" data-prayer="${p}" style="width:auto"
+            ${settings.prayers && settings.prayers[p] ? "checked" : ""} />
+          Play ${labels[p]} adhan
+        </label>`).join("");
+    }
+
+    async function saveSettings(payload, msg) {
+      try {
+        await api("/api/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        toast(msg || "Saved");
+      } catch (e) {
+        toast(e.message, true);
+      }
+    }
+
+    $("saveLocation").onclick = () =>
+      saveSettings({
+        lat: $("lat").value, lon: $("lon").value, method: $("method").value,
+        fajr_angle: $("fajrAngle").value === "" ? null : $("fajrAngle").value,
+        isha_angle: $("ishaAngle").value === "" ? null : $("ishaAngle").value,
+        asr_method: $("asrMethod").value,
+      }, "Saved — click Apply to reschedule");
+    $("saveVolumes").onclick = () =>
+      saveSettings({
+        default_azaan_vol: +$("volDefault").value,
+        fajr_azaan_vol: +$("volFajr").value,
+        surah_vol: +$("volSurah").value,
+      }, "Volumes saved");
+    $("saveFriday").onclick = () =>
+      saveSettings({ play_surah_baqarah: $("fridayOn").checked },
+        "Saved — click Apply to reschedule");
+    $("savePrayers").onclick = () => {
+      const prayers = {};
+      document.querySelectorAll(".pray").forEach((c) => (prayers[c.dataset.prayer] = c.checked));
+      saveSettings({ prayers }, "Prayer playback saved");
+    };
+
+    async function loadAdhans() {
+      const { adhans } = await api("/api/adhans");
+      if (!adhans.length) { $("adhanList").textContent = "No adhans found in media/."; return; }
+      $("adhanList").innerHTML = adhans.map((a) => `
+        <div class="adhan" data-name="${a.name}">
+          <label class="switch" title="Include in random pick">
+            <input type="checkbox" class="en" style="width:auto" ${a.enabled ? "checked" : ""} />
+          </label>
+          <div class="info">
+            <div class="name">${a.name}</div>
+            <div class="meta">${a.size_mb} MB</div>
+          </div>
+          <select class="cat">
+            <option value="regular" ${a.category === "regular" ? "selected" : ""}>Regular</option>
+            <option value="fajr" ${a.category === "fajr" ? "selected" : ""}>Fajr</option>
+          </select>
+          <audio controls preload="none" src="/media/${encodeURIComponent(a.name)}"></audio>
+          <button class="btn danger small del">Delete</button>
+        </div>`).join("");
+
+      $("adhanList").querySelectorAll(".adhan").forEach((row) => {
+        const name = row.dataset.name;
+        const send = () => api("/api/adhans", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ [name]: {
+            enabled: row.querySelector(".en").checked,
+            category: row.querySelector(".cat").value,
+          } }),
+        }).then(() => toast("Pool updated")).catch((e) => toast(e.message, true));
+        row.querySelector(".en").onchange = send;
+        row.querySelector(".cat").onchange = send;
+        row.querySelector(".del").onclick = async () => {
+          if (!confirm("Delete " + name + "?")) return;
+          try { await api("/api/adhans/" + encodeURIComponent(name), { method: "DELETE" });
+            toast("Deleted"); loadAdhans(); }
+          catch (e) { toast(e.message, true); }
+        };
+      });
+    }
+
+    $("uploadBtn").onclick = async () => {
+      const f = $("file").files[0];
+      if (!f) { toast("Choose a file first", true); return; }
+      const fd = new FormData();
+      fd.append("file", f);
+      try {
+        await api("/api/adhans/upload", { method: "POST", body: fd });
+        toast("Uploaded"); $("file").value = ""; loadAdhans();
+      } catch (e) { toast(e.message, true); }
+    };
+
+    $("applyBtn").onclick = async () => {
+      toast("Rescheduling…");
+      try {
+        const r = await api("/api/apply", { method: "POST" });
+        toast(r.ok ? "Cron rescheduled" : "Apply finished with errors", !r.ok);
+      } catch (e) { toast(e.message, true); }
+    };
+
+    $("showTimes").onclick = async () => {
+      try {
+        const r = await api("/api/times");
+        const out = $("timesOut");
+        out.style.display = "block";
+        out.textContent = r.output;
+      } catch (e) { toast(e.message, true); }
+    };
+
+    async function testPlay(prayer) {
+      try { await api("/api/play", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prayer }),
+      }); toast("Playing " + prayer + "…"); }
+      catch (e) { toast(e.message, true); }
+    }
+    window.testPlay = testPlay;
+
+    $("stopBtn").onclick = async () => {
+      try { await api("/api/stop", { method: "POST" }); toast("Playback stopped"); }
+      catch (e) { toast(e.message, true); }
+    };
+
+    loadSettings().catch((e) => toast(e.message, true));
+    loadAdhans().catch((e) => toast(e.message, true));
+  </script>
+</body>
+</html>

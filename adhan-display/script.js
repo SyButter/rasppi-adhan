@@ -1,12 +1,39 @@
 // —— CONFIG ——
-const latitude  = 40.207527;   // your latitude
-const longitude =  -74.829727;  // your longitude
-const method    = 'ISNA';    // calculation method
+// Defaults; overridden at load by adhan-display/display_config.json, which the
+// admin panel / updateAzaanTimers.py keep in sync with settings.ini.
+let latitude  = 40.207527;   // your latitude
+let longitude =  -74.829727;  // your longitude
+let method    = 'ISNA';      // calculation method
+let fajrAngle = null;        // custom Fajr angle (null = method default)
+let ishaAngle = null;        // custom Isha angle (null = method default)
+let asrMethod = 'Standard';  // 'Standard' or 'Hanafi' (later Asr)
 // ——————————
 
-const pt = new PrayTimes(method);
-// override ISNA’s default 15° fajr angle to 18°
-pt.adjust({ fajr: 18 });
+let pt;
+function buildPt() {
+  pt = new PrayTimes(method);
+  const adj = { asr: asrMethod };
+  if (fajrAngle !== null) adj.fajr = fajrAngle;
+  if (ishaAngle !== null) adj.isha = ishaAngle;
+  pt.adjust(adj);
+}
+buildPt();
+
+// Pull the shared config so this display matches the speaker schedule.
+async function loadConfig() {
+  try {
+    const cfg = await fetch('display_config.json', { cache: 'no-store' }).then(r => r.json());
+    if (typeof cfg.latitude  === 'number') latitude  = cfg.latitude;
+    if (typeof cfg.longitude === 'number') longitude = cfg.longitude;
+    if (cfg.method) method = cfg.method;
+    fajrAngle = (typeof cfg.fajr_angle === 'number') ? cfg.fajr_angle : null;
+    ishaAngle = (typeof cfg.isha_angle === 'number') ? cfg.isha_angle : null;
+    if (cfg.asr_method) asrMethod = cfg.asr_method;
+    buildPt();
+  } catch (err) {
+    console.warn('Using built-in location defaults (display_config.json not found):', err);
+  }
+}
 
 function pad(n) { return (n<10?'0':'')+n; }
 
@@ -130,5 +157,5 @@ function refreshAll() {
   renderNextJummah();
 }
 
-refreshAll();
-scheduleDaily(refreshAll, 2);
+loadConfig().then(refreshAll);
+scheduleDaily(async () => { await loadConfig(); refreshAll(); }, 2);
