@@ -269,11 +269,8 @@ pip3 install -r requirements.txt
 python3 app.py            # http://<pi-ip>:8080
 ```
 
-The login is HTTP Basic. Set the password in `settings.ini`:
-```ini
-[ADMIN]
-password = your-password-here      # default is "adhan" — change it
-```
+There's no login — it's meant to run on your home network only. Don't expose
+port 8080 to the internet.
 
 ### Auto-start everything on boot (recommended)
 

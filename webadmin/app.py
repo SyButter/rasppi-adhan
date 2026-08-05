@@ -9,18 +9,15 @@ Run:
     cd webadmin
     pip3 install -r requirements.txt
     python3 app.py            # serves on http://0.0.0.0:8080
-
-Password: set in settings.ini under [ADMIN] password (default "adhan").
 """
 
 import os
 import subprocess
 import sys
-from functools import wraps
 from os.path import abspath, dirname, exists, join as pathjoin
 
 from flask import (
-    Flask, Response, jsonify, request, send_from_directory, render_template,
+    Flask, jsonify, request, send_from_directory, render_template,
 )
 from werkzeug.utils import secure_filename
 
@@ -36,33 +33,10 @@ UPDATE_SCRIPT = pathjoin(ROOT_DIR, "updateAzaanTimers.py")
 
 
 # ---------------------------------------------------------------------------
-# Auth (HTTP Basic against the password in settings.ini)
-# ---------------------------------------------------------------------------
-
-def check_auth(username, password):
-    settings = cfg.load_settings()
-    return username == settings["admin_username"] and password == settings["admin_password"]
-
-
-def requires_auth(fn):
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        auth = request.authorization
-        if not auth or not check_auth(auth.username, auth.password):
-            return Response(
-                "Login required", 401,
-                {"WWW-Authenticate": 'Basic realm="Adhan Admin"'},
-            )
-        return fn(*args, **kwargs)
-    return wrapper
-
-
-# ---------------------------------------------------------------------------
 # Pages
 # ---------------------------------------------------------------------------
 
 @app.route("/")
-@requires_auth
 def index():
     return render_template("admin.html")
 
@@ -72,11 +46,8 @@ def index():
 # ---------------------------------------------------------------------------
 
 @app.route("/api/settings", methods=["GET"])
-@requires_auth
 def get_settings():
     settings = cfg.load_settings()
-    settings.pop("admin_username", None)  # never expose credentials
-    settings.pop("admin_password", None)
     return jsonify({
         "settings": settings,
         "methods": cfg.CALC_METHODS,
@@ -85,7 +56,6 @@ def get_settings():
 
 
 @app.route("/api/settings", methods=["POST"])
-@requires_auth
 def post_settings():
     data = request.get_json(force=True, silent=True) or {}
     updates = {}
@@ -144,8 +114,6 @@ def post_settings():
         }
 
     saved = cfg.save_settings(updates)
-    saved.pop("admin_username", None)
-    saved.pop("admin_password", None)
     return jsonify({"settings": saved, "ok": True})
 
 
@@ -154,7 +122,6 @@ def post_settings():
 # ---------------------------------------------------------------------------
 
 @app.route("/api/adhans", methods=["GET"])
-@requires_auth
 def get_adhans():
     pool = cfg.load_pool()
     items = []
@@ -170,7 +137,6 @@ def get_adhans():
 
 
 @app.route("/api/adhans", methods=["POST"])
-@requires_auth
 def update_adhans():
     """Update pool metadata: {"name": {"enabled": bool, "category": "fajr|regular"}}."""
     data = request.get_json(force=True, silent=True) or {}
@@ -187,7 +153,6 @@ def update_adhans():
 
 
 @app.route("/api/adhans/upload", methods=["POST"])
-@requires_auth
 def upload_adhan():
     if "file" not in request.files:
         return jsonify({"error": "No file provided"}), 400
@@ -211,7 +176,6 @@ def upload_adhan():
 
 
 @app.route("/api/adhans/<path:name>", methods=["DELETE"])
-@requires_auth
 def delete_adhan(name):
     name = secure_filename(name)
     if name not in cfg.list_media_adhans():
@@ -227,7 +191,6 @@ def delete_adhan(name):
 
 
 @app.route("/media/<path:name>")
-@requires_auth
 def media(name):
     """Stream a media file for in-browser preview."""
     return send_from_directory(cfg.MEDIA_DIR, secure_filename(name))
@@ -238,7 +201,6 @@ def media(name):
 # ---------------------------------------------------------------------------
 
 @app.route("/api/apply", methods=["POST"])
-@requires_auth
 def apply_cron():
     """Re-run updateAzaanTimers.py to recompute times and reinstall cron."""
     try:
@@ -255,7 +217,6 @@ def apply_cron():
 
 
 @app.route("/api/play", methods=["POST"])
-@requires_auth
 def play_test():
     """Fire a test adhan on the Pi's speakers (fajr | regular | surah)."""
     data = request.get_json(force=True, silent=True) or {}
@@ -273,7 +234,6 @@ def play_test():
 
 
 @app.route("/api/stop", methods=["POST"])
-@requires_auth
 def stop_playback():
     """Stop any adhan/dua currently playing on the Pi's speakers."""
     # pkill returns exit code 1 when nothing matched; that's not an error here.
@@ -283,7 +243,6 @@ def stop_playback():
 
 
 @app.route("/api/times", methods=["GET"])
-@requires_auth
 def prayer_times():
     """Return today's computed prayer times as a quick sanity check."""
     try:

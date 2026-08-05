@@ -2,7 +2,7 @@
 """Shared configuration helpers for the Raspberry Pi Adhan clock.
 
 This is the single source of truth for:
-  - settings.ini    -> location, method, volumes, Friday surah, audio device, admin password
+  - settings.ini    -> location, method, volumes, Friday surah, audio device
   - adhans.json     -> which adhan mp3s are in the random pool and their category (fajr/regular)
 
 Used by play_adhan.py (play time), updateAzaanTimers.py (cron install) and
@@ -42,8 +42,6 @@ _DEFAULTS = {
     "play_surah_baqarah": False,
     "surah_vol": 100,
     "audio_device": DEFAULT_AUDIO_DEVICE,
-    "admin_username": "admin",
-    "admin_password": "adhan",
     "fajr_angle": None,   # None = use the calculation method's default
     "isha_angle": None,   # None = use the calculation method's default
     "asr_method": "Standard",
@@ -101,8 +99,6 @@ def load_settings():
         "play_surah_baqarah": _to_bool(get("FRIDAY", "playSurahBaqarah"), _DEFAULTS["play_surah_baqarah"]),
         "surah_vol": _to_int(get("FRIDAY", "surahVolume"), _DEFAULTS["surah_vol"]),
         "audio_device": get("AUDIO", "device", _DEFAULTS["audio_device"]) or _DEFAULTS["audio_device"],
-        "admin_username": get("ADMIN", "username", _DEFAULTS["admin_username"]) or _DEFAULTS["admin_username"],
-        "admin_password": get("ADMIN", "password", _DEFAULTS["admin_password"]) or _DEFAULTS["admin_password"],
         # Per-prayer sound toggle. Times still show on the display when muted;
         # only the adhan playback is skipped. Default: every prayer plays.
         "prayers": {p: _to_bool(get("PRAYERS", p), True) for p in PRAYER_NAMES},
@@ -149,10 +145,6 @@ def save_settings(values):
         "surahVolume": str(current["surah_vol"]),
     }
     config["AUDIO"] = {"device": current["audio_device"]}
-    config["ADMIN"] = {
-        "username": current["admin_username"],
-        "password": current["admin_password"],
-    }
     config["PRAYERS"] = {p: str(current["prayers"][p]) for p in PRAYER_NAMES}
     config["CALC"] = {
         "fajr_angle": "" if current["fajr_angle"] is None else str(current["fajr_angle"]),
